@@ -73,6 +73,42 @@ def extract_insights(
 
 
 @app.command()
+def review_sample(
+    n: int = typer.Option(30, help="Insights to sample"),
+    out_dir: str = typer.Option("reviews", help="Where to write the markdown sample"),
+    unreviewed_only: bool = typer.Option(True, help="Skip insights that already have a verdict"),
+):
+    """Write a markdown sample of extractions for a reviewer (Claude or human)."""
+    from pathlib import Path
+
+    from .stages.review_sample import write_sample
+
+    typer.echo(write_sample(n, Path(out_dir), unreviewed_only))
+
+
+@app.command()
+def review_ingest(
+    path: str, reviewer: str = typer.Option(..., help="Who reviewed: claude, selwyn, ...")
+):
+    """Read verdict lines from a reviewed sample file into extraction_reviews."""
+    from pathlib import Path
+
+    from .stages.review_sample import ingest
+
+    typer.echo(ingest(Path(path), reviewer))
+
+
+@app.command()
+def scorecard():
+    """Print extraction quality metrics from verdicts and the grounding check."""
+    import json
+
+    from .stages.review_sample import scorecard as _scorecard
+
+    typer.echo(json.dumps(_scorecard(), indent=2, default=str))
+
+
+@app.command()
 def freshness():
     """Nightly job: re-pull text and re-extract stale venues. (Later stages plug in here.)"""
     typer.echo("freshness: no downstream stages implemented yet")
