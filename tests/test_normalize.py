@@ -30,3 +30,8 @@ def test_housenumber_and_zip():
     assert norm_housenumber("34-36") == "34-36"
     assert norm_zip("10019-1234") == "10019"
     assert norm_zip("") == ""
+
+
+def test_store_numbers_are_dropped():
+    assert norm_name("CHIPOTLE MEXICAN GRILL #3056") == "chipotle mexican grill"
+    assert norm_name("Dunkin' #12345") == "dunkin"

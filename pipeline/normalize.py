@@ -39,6 +39,7 @@ def norm_name(name: str | None) -> str:
     if not name:
         return ""
     s = _ascii(name)
+    s = re.sub(r"#\s*\d+\b", " ", s)  # chain store numbers: "CHIPOTLE MEXICAN GRILL #3056"
     s = s.replace("&", " and ")
     s = re.sub(r"[^a-z0-9 ]+", " ", s)
     tokens = [t for t in s.split() if t not in _NAME_STOP]
