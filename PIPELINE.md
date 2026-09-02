@@ -1,122 +1,78 @@
-# Venue Insight Pipeline — living status report
+# Pipeline status
 
-Multi-source venue discovery, deduplication and LLM insight extraction for Manhattan, built as a
-portfolio answer to the Moodap data-engineer brief. This file is the running account of what exists,
-what the numbers are, and what is next. Design decisions live in [PLAN.md](PLAN.md); this file tracks
-execution. Updated as stages land.
+Live account of what has run and what the numbers are. Design is in [PLAN.md](PLAN.md); how things
+work is in the [README](README.md). Updated as stages land.
 
-_Last updated: 2026-09-02 night shift, 03:45. Commit `9076dcb`. Pipeline complete end to end; background pulls and batches still filling the tables._
-
-## Pipeline at a glance
+_Last updated: 2026-09-02 night shift, 05:15. Pipeline and web app complete; background jobs still
+filling tables._
 
 ```mermaid
 flowchart LR
   classDef n fill:#d1e9ff,stroke:#175cd3,color:#1a2233
   classDef done fill:#d1e9ff,stroke:#0b4bb3,stroke-width:3px,color:#1a2233
   classDef todo fill:#ffffff,stroke:#175cd3,stroke-dasharray:4 3,color:#1a2233
-
   subgraph S1[Venue sources]
     OSM[OpenStreetMap]:::n
-    DOH[NYC DOHMH inspections]:::n
+    DOH[NYC DOHMH]:::n
   end
   subgraph S2[Text sources]
     INF[The Infatuation]:::n
     WP[Wikipedia + Wikivoyage]:::n
     RD[Reddit API]:::todo
   end
-
   OSM --> D1[1 discover]:::done
   DOH --> D1
   D1 --> RV[(raw_venues)]:::n
   RV --> D2[2 dedupe]:::done
   D2 --> V[(venues)]:::n
-
   INF --> D3[3 collect]:::done
   WP --> D3
   RD -.-> D3
   D3 --> RR[(raw_reviews)]:::n
-
-  RR --> D4[5 match reviews]:::done
+  RR --> D4[5 match]:::done
   V --> D4
-  D4 --> D6[6 extract insights]:::done
+  D4 --> D6[6 extract]:::done
   D6 --> I[(insights)]:::n
   I --> VP[(venue_profiles)]:::n
   VP --> WEB[web explorer]:::done
-  I --> D7[7 review loop]:::done
+  I --> D7[7 review]:::done
   D7 --> SC[scorecard]:::n
   VP --> D9[9 claim readiness]:::done
-  D8[8 nightly freshness]:::done -.-> D3
+  D8[8 freshness, nightly]:::done -.-> D3
   style S1 fill:#f4f8fc,stroke:#175cd3,color:#1a2233
   style S2 fill:#f4f8fc,stroke:#175cd3,color:#1a2233
 ```
 
-Solid boxes with a heavy border are built and verified. Dashed boxes are designed but not built (Reddit is coded but blocked on credentials).
-Cylinders are Postgres tables in the local Supabase stack. The Reddit path is coded but blocked on API
-credentials, so it is dashed.
+Heavy border = built and verified. Dashed = coded but blocked (Reddit needs credentials).
 
-## Stage status
+## Numbers
 
-| # | Stage | What it does | Status | Key numbers |
-|---|---|---|---|---|
-| 1 | discover | Pull venue candidates from OSM (Overpass, bbox + borough polygon clip) and DOHMH (Socrata) into append-only `raw_venues`. Each amenity type / page is a resumable unit. | Done | 7,130 OSM + 12,500 DOHMH in 79 s; rerun skips all units in 2 s |
-| 2 | dedupe | Normalise names/streets/phones, block by geohash (150 m) or zip+street, score name + address + distance + phone, merge same-source re-registrations, greedy one-to-one cross-source matching with a near-certain override. Every scored pair kept in `match_candidates`. | Done | 19,630 raw → 14,504 venues; 4,892 cross-source pairs matched; 436 DOHMH re-registrations + 43 OSM double-mappings merged; 1,486 pairs held for review. 10 unit tests |
-| 3 | collect_reviews | Venue-centric prose from open web sources into `raw_reviews`: Infatuation review pages (sitemap → server-rendered JSON), Wikipedia category members (full extracts + coords), Wikivoyage eat/drink listings on 19 district pages. | Done for wiki sources; Infatuation pull running | Wikipedia 440 pages (584 titles, historic venues included); Wikivoyage 226 listings across 19 districts; Infatuation 2,688 / 8,142 pages, ~47 pages/min, finish ≈ 05:35. Parser bug caught at 1,806 pages (body nested under `content`), fixed and re-pulled |
-| 3 | collect_text (Reddit) | Subreddit keyword search + comment trees via the official OAuth API. | Blocked | Reddit refuses anonymous JSON from this IP; needs script-app credentials or gets dropped |
-| 5 | match_reviews | Deterministic matcher links each `raw_reviews` row to a canonical venue using the dedupe blocking + scoring against the `venues` table; Manhattan polygon filter; every link kept in `review_venue_links` with score components. | Done (reruns as collection grows) | 1,428 rows: 588 matched, 129 review, 369 unmatched (mostly defunct Wikipedia venues), 342 outside Manhattan. 78 % of matches score 1.0; random matched samples all correct |
-| 4 | mention extraction | LLM pulls venue mentions out of free text that does not name its venue (Reddit-style). | Deferred | Not needed for the three adopted sources, which all name their venue |
-| 6 | extract_insights | Structured output per matched review: vibe tags from a 25-word controlled vocabulary, noise/crowd, best time, recurring events, good-for, sentiment, confidence, evidence quotes. A grounding filter drops any field without a verbatim quote. Provider interface: Ollama Qwen 2.5 7B locally, Anthropic API by env var. Resumable per (review, model, prompt version). | Done, batch 1 running | 81 insights so far (69 prompt v2, 12 v3); 81 venues have a profile. Prompt v1→v3 after two review passes; 7B kept over 3B (1.6× faster, worse); ~30–35 s/review under load. Batch 2 over all Manhattan reviews (~4,300, ~36 h resumable) queued behind the pull |
-| 7 | review loop | `review-sample` writes a markdown sample (source text, extraction, evidence); `review-ingest` reads verdicts per reviewer into `extraction_reviews`; `scorecard` prints verbatim-evidence rate, grounding drops, verdicts per field. Loop: Qwen extracts → Claude reviews → human spot-checks. | Done | First pass (20, reviewer claude): 4 correct · 15 partial · 1 wrong. Main fault: vibe inferred from awards/press, fixed in prompt v3 |
-| 8 | freshness | Expires `stage_progress` units older than a per-source TTL (DOHMH 7 d, wiki 14 d, OSM/Infatuation 30 d), reruns discover + collectors (upsert only changed content), relinks, re-extracts rows whose content hash changed, rescoring claims. `--force` expires everything. Runs nightly from the scheduler container. | Done | — |
-| web | explorer | One-page Next.js + Radix Themes + MapLibre app in `web/` over the read views (`venue_map`, `venue_profiles`, `venue_evidence`, `claim_readiness`); Docker dev service with hot reload. Mood chips + category/neighbourhood/good-for filters, cards with one insider line and its quote, drawer with evidence links and claim score. | Done | Verified headless: 14,191 dots, 116 cards, filters and dark mode working |
-| 9 | claim_readiness | Per-venue score = 0.45 insight richness + 0.25 activity (recent inspection) + 0.20 contact (website/phone) + 0.10 cross-source corroboration; components stored for explainability. | Done | 14,504 venues scored |
+| Stage | Status | Result |
+|---|---|---|
+| 1 discover | done | 7,130 OSM + 12,500 DOHMH records in 79 s; rerun skips all units in 2 s |
+| 2 dedupe | done | 19,630 raw → 14,495 venues; 4,900 cross-source matches (79 % exact name, 73 % full address, 43 % phone); 437 DOHMH re-registrations + 43 OSM double-mappings merged; 1,487 pairs held for review |
+| 3 collect | running | Wikipedia 440, Wikivoyage 226, Infatuation 6,394 of 8,142 pages (~51/min) |
+| 5 match | done, reruns | 1,669 reviews matched, 269 review, 807 unmatched (mostly defunct Wikipedia venues), 1,676 outside Manhattan |
+| 6 extract | running | 261 insights (162 on prompt v3); 80 % with all evidence verbatim; ~26 s per review |
+| 7 review | done | First pass, 20 insights: 4 correct · 15 partial · 1 wrong. Main fault was vibe inferred from awards and press; prompt v3 addresses it |
+| 8 freshness | scheduled | Scheduler container runs it daily at 03:00 (Asia/Manila); TTLs DOHMH 7 d, wiki 14 d, OSM/Infatuation 30 d |
+| 9 claim readiness | done | 14,495 venues scored |
+| web | done | Explorer, review page, status page; CI green |
 
-## Sources and why these
+## Running now
 
-| Source | Role | Access | Notes |
-|---|---|---|---|
-| OpenStreetMap (Overpass) | venues | public API, no key | Needs a real User-Agent (406 otherwise); area lookups for Manhattan return nothing, so bbox + polygon clip |
-| NYC DOHMH inspections (Socrata `43nn-pn8j`) | venues | public API, no key | 313 rows without coordinates, 1,659 never inspected, uppercase legal names, `/`-joined multi-concept names |
-| The Infatuation | text | public pages, robots allows generic crawlers | Editorial reviews with address, coords, price, neighbourhood, cuisine, "perfect for" tags. Covers all five boroughs; Manhattan filter applied at match time |
-| Wikipedia | text | MediaWiki API, no key | Notable venues only; full extracts are one page per request |
-| Wikivoyage | text | MediaWiki API, no key | `{{eat}}`/`{{drink}}`/`{{listing}}` templates with address, coords, hours, price, description |
-| Reddit | text | official OAuth API | Anonymous JSON blocked from this IP on every host/UA tried |
-| Rejected | — | — | Facebook, X: login walls + ToS. Foursquare: login redirect. Bluesky public API: 403 here. Google/Yelp/TripAdvisor: Moodap's named competitors, anti-scraping terms |
-
-## Runtime
-
-- Python 3.12 package `pipeline/` with a Typer CLI (`pipeline discover | dedupe | collect-reviews | collect-text | freshness | status`).
-- Supabase local stack in Docker (Postgres 17); migrations in `supabase/migrations/`, applied with `supabase migration up`.
-- Ollama on the Mac host (`qwen2.5:7b-instruct`); containers reach it and Postgres via `host.docker.internal`.
-- `docker compose run --rm pipeline <stage>`; `scheduler` service loops for the nightly job.
-- All external calls go through one polite client: per-host throttle, retry with jittered backoff, honours 429 `Retry-After`.
-- Every stage records a `pipeline_runs` row and per-unit `stage_progress` markers, so any stage resumes after a crash.
-
-## Rules the code follows
-
-1. `raw_*` tables are never mutated by downstream stages; everything derived can be rebuilt from raw.
-2. Every stage is idempotent and resumable.
-3. Derived venue ids are stable across rebuilds (`venues.key` = primary source id).
-4. Every match decision is persisted with its component scores for audit.
-5. Schema changes are new migration files, never edits.
-
-## Open decisions
-
-- Keep or drop the Reddit path (needs a free script app from the user).
-- Whether the per-stage HTML reports (kept in the local memory repo) should also be published in this repo.
-- Freshness TTLs are set (DOHMH 7 d, wiki 14 d, OSM/Infatuation 30 d) but untested against a real second pull.
+An unattended chain waits for the Infatuation pull, relinks, extracts every matched review with
+prompt v3 (roughly 15–18 h), then rescores claims. The scheduler takes over from tomorrow.
 
 ## Next
 
-1. Batch 2 extraction with prompt v3 once the Infatuation pull ends and the matcher is rerun.
-2. Second review pass on v3 output, with a human spot-check of Claude's verdicts; scorecard refresh in the README.
-3. Refresh the interim stage reports (collect, match, extraction) with final numbers.
-4. Unmatched Infatuation venues inside Manhattan could become a third venue feed.
-5. Strip store-number suffixes (`#3056`) in name normalisation to recover chain matches held in review.
+1. Second review pass on prompt v3 output with a human spot-check; refresh the scorecard.
+2. Refresh the collect / match / extraction reports with final numbers.
+3. Unmatched Infatuation venues inside Manhattan as a third venue feed.
+4. Reddit, if credentials are ever added.
 
 ## Change log
 
-- 2026-09-02: scaffold, discover, dedupe, review collectors, LLM provider interface, this document.
-- 2026-09-02 (04:00-04:45): frontend grilled and built (Next.js, Radix Themes, MapLibre, Docker dev service); Docker daemon hang killed both background jobs, restarted; 404 sitemap entries now recorded instead of aborting the pull.
-- 2026-09-02 (03:30-03:45): first review pass (20 insights: 4 correct / 15 partial / 1 wrong) → prompt v3; README written; PIPELINE.md refreshed with current counts.
-- 2026-09-02 (03:00-04:00): stage 6 extraction with grounding filter, stage 7 review loop and first scorecard, `venue_profiles` view, stage 8 freshness with TTLs, stage 9 claim readiness. Pipeline complete end to end; batch 2 extraction pending the Infatuation pull.
-- 2026-09-02 (later): Infatuation parser fix (body was nested under `content`; 1,806 preview-only rows re-pulled); stage 5 match_reviews built; stage 4 deferred.
+- 2026-09-02 00:30–01:00 scaffold, discover, memory kit
+- 01:00–03:45 dedupe, text sources (Reddit blocked → Infatuation/Wikipedia/Wikivoyage), match, extract (prompt v1→v3), review loop, freshness, claim readiness, README
+- 04:00–05:15 web explorer, review page, status page, scheduler daemon, CI, history rewritten to Conventional Commits

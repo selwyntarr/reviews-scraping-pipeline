@@ -1,26 +1,19 @@
 # Venue Insight Pipeline
 
-Portfolio project: multi-source venue discovery, dedup, and LLM insight extraction for Manhattan.
-Design decisions live in PLAN.md. Read it before changing pipeline stages.
+Read PLAN.md before changing a stage; keep PIPELINE.md current when one lands.
 
 ## Run
-- `supabase start` (Docker must be running), then `supabase db reset` to apply migrations.
-- `cp .env.example .env`
-- `docker compose run --rm pipeline discover` (or `uv run pipeline discover` on the host with the host DATABASE_URL).
+`supabase start` → `cp .env.example .env` → `uv run pipeline <stage>` or `docker compose run --rm pipeline <stage>`.
+Web: `docker compose up -d web` (never `npm install` on the host; edit `web/package.json`, regenerate the lockfile in a `node:22-alpine` container, `docker compose build web`).
 
 ## Rules
-- Raw tables (`raw_*`) are never mutated by downstream stages.
-- Every stage must be idempotent: record units in `stage_progress`, skip done units on rerun.
-- External calls go through `pipeline/http.py` for retry/backoff and rate limiting.
-- Schema changes are new files in `supabase/migrations/`, never edits to applied ones.
-
-## Memory
-- Canonical memory is the local semantic store in `agent-memory/` (MCP server `venue-memory`: `recall_semantic`, `remember_fact`, `list_board`, ...). Durable facts and decisions go there via `remember_fact`, not into new files.
-- `/standup` opens a session, `/wrap` closes it. Weekly: `/memory-audit` then `/memory-backup`.
-- `agent-memory/` and `.claude/` are gitignored and local-only; the DB is never committed.
-- Machine clock is labelled PST but is actually UTC+8. Convert explicitly.
+- `raw_*` tables are never mutated downstream; every stage is idempotent via `stage_progress`.
+- External calls go through `pipeline/http.py`. Schema changes are new files in `supabase/migrations/`.
+- After a collector's first hundred rows, check average text length and one full row before letting it run.
+- Verify model output mechanically (verbatim evidence) before trusting it.
 
 ## Git
-- Conventional Commits: `feat(scope): …`, `fix(scope): …`, `docs: …`, `style(web): …`, `chore: …`. Scopes: discover, dedupe, collect, match, extract, review, pipeline, web.
-- No AI attribution: no `Co-Authored-By` or session trailers in commits or PR bodies.
-- Commit as selwyntarr / selwyntarr@gmail.com. Push to `main` only when asked.
+Conventional Commits with scopes discover, dedupe, collect, match, extract, review, pipeline, web. No AI attribution trailers. Commit as selwyntarr / selwyntarr@gmail.com; push to `main` only when asked.
+
+## Memory
+Canonical memory is `agent-memory/` (MCP `venue-memory`: `remember_fact`, `recall_semantic`, `list_board`). `/standup` opens, `/wrap` closes a session. `agent-memory/` and `.claude/` are local-only. The machine clock says PST but is UTC+8.
