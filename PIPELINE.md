@@ -5,7 +5,7 @@ portfolio answer to the Moodap data-engineer brief. This file is the running acc
 what the numbers are, and what is next. Design decisions live in [PLAN.md](PLAN.md); this file tracks
 execution. Updated as stages land.
 
-_Last updated: 2026-09-02 night shift. Commit `9e29e54`._
+_Last updated: 2026-09-02 night shift, 03:45. Commit `9076dcb`. Pipeline complete end to end; background pulls and batches still filling the tables._
 
 ## Pipeline at a glance
 
@@ -59,11 +59,11 @@ credentials, so it is dashed.
 |---|---|---|---|---|
 | 1 | discover | Pull venue candidates from OSM (Overpass, bbox + borough polygon clip) and DOHMH (Socrata) into append-only `raw_venues`. Each amenity type / page is a resumable unit. | Done | 7,130 OSM + 12,500 DOHMH in 79 s; rerun skips all units in 2 s |
 | 2 | dedupe | Normalise names/streets/phones, block by geohash (150 m) or zip+street, score name + address + distance + phone, merge same-source re-registrations, greedy one-to-one cross-source matching with a near-certain override. Every scored pair kept in `match_candidates`. | Done | 19,630 raw → 14,504 venues; 4,892 cross-source pairs matched; 436 DOHMH re-registrations + 43 OSM double-mappings merged; 1,486 pairs held for review. 10 unit tests |
-| 3 | collect_reviews | Venue-centric prose from open web sources into `raw_reviews`: Infatuation review pages (sitemap → server-rendered JSON), Wikipedia category members (full extracts + coords), Wikivoyage eat/drink listings on 19 district pages. | Running | Infatuation 974 / 8,142 pages (background pull); Wikipedia 235; Wikivoyage ~200 (rerun in progress) |
+| 3 | collect_reviews | Venue-centric prose from open web sources into `raw_reviews`: Infatuation review pages (sitemap → server-rendered JSON), Wikipedia category members (full extracts + coords), Wikivoyage eat/drink listings on 19 district pages. | Done for wiki sources; Infatuation pull running | Wikipedia 440 pages (584 titles, historic venues included); Wikivoyage 226 listings across 19 districts; Infatuation 2,688 / 8,142 pages, ~47 pages/min, finish ≈ 05:35. Parser bug caught at 1,806 pages (body nested under `content`), fixed and re-pulled |
 | 3 | collect_text (Reddit) | Subreddit keyword search + comment trees via the official OAuth API. | Blocked | Reddit refuses anonymous JSON from this IP; needs script-app credentials or gets dropped |
-| 5 | match_reviews | Deterministic matcher links each `raw_reviews` row to a canonical venue using the dedupe blocking + scoring against the `venues` table; Manhattan polygon filter; every link kept in `review_venue_links` with score components. | Done (reruns as collection grows) | On the first 524 rows: 221 matched, 57 review, 188 unmatched (mostly defunct Wikipedia venues), 58 outside Manhattan. Random matched samples all correct |
+| 5 | match_reviews | Deterministic matcher links each `raw_reviews` row to a canonical venue using the dedupe blocking + scoring against the `venues` table; Manhattan polygon filter; every link kept in `review_venue_links` with score components. | Done (reruns as collection grows) | 1,428 rows: 588 matched, 129 review, 369 unmatched (mostly defunct Wikipedia venues), 342 outside Manhattan. 78 % of matches score 1.0; random matched samples all correct |
 | 4 | mention extraction | LLM pulls venue mentions out of free text that does not name its venue (Reddit-style). | Deferred | Not needed for the three adopted sources, which all name their venue |
-| 6 | extract_insights | Structured output per matched review: vibe tags from a 25-word controlled vocabulary, noise/crowd, best time, recurring events, good-for, sentiment, confidence, evidence quotes. A grounding filter drops any field without a verbatim quote. Provider interface: Ollama Qwen 2.5 7B locally, Anthropic API by env var. Resumable per (review, model, prompt version). | Done, batch 1 running | Prompt v1→v3 after two review passes; 7B kept over 3B; ~30 s/review under load |
+| 6 | extract_insights | Structured output per matched review: vibe tags from a 25-word controlled vocabulary, noise/crowd, best time, recurring events, good-for, sentiment, confidence, evidence quotes. A grounding filter drops any field without a verbatim quote. Provider interface: Ollama Qwen 2.5 7B locally, Anthropic API by env var. Resumable per (review, model, prompt version). | Done, batch 1 running | 81 insights so far (69 prompt v2, 12 v3); 81 venues have a profile. Prompt v1→v3 after two review passes; 7B kept over 3B (1.6× faster, worse); ~30–35 s/review under load. Batch 2 over all Manhattan reviews (~4,300, ~36 h resumable) queued behind the pull |
 | 7 | review loop | `review-sample` writes a markdown sample (source text, extraction, evidence); `review-ingest` reads verdicts per reviewer into `extraction_reviews`; `scorecard` prints verbatim-evidence rate, grounding drops, verdicts per field. Loop: Qwen extracts → Claude reviews → human spot-checks. | Done | First pass (20, reviewer claude): 4 correct · 15 partial · 1 wrong. Main fault: vibe inferred from awards/press, fixed in prompt v3 |
 | 8 | freshness | Expires `stage_progress` units older than a per-source TTL (DOHMH 7 d, wiki 14 d, OSM/Infatuation 30 d), reruns discover + collectors (upsert only changed content), relinks, re-extracts rows whose content hash changed, rescoring claims. `--force` expires everything. Runs nightly from the scheduler container. | Done | — |
 | 9 | claim_readiness | Per-venue score = 0.45 insight richness + 0.25 activity (recent inspection) + 0.20 contact (website/phone) + 0.10 cross-source corroboration; components stored for explainability. | Done | 14,504 venues scored |
@@ -100,11 +100,20 @@ credentials, so it is dashed.
 ## Open decisions
 
 - Keep or drop the Reddit path (needs a free script app from the user).
-- When to create the public GitHub remote.
-- Freshness TTL policy per source (editorial pages change rarely; social text often).
+- Whether the per-stage HTML reports (kept in the local memory repo) should also be published in this repo.
+- Freshness TTLs are set (DOHMH 7 d, wiki 14 d, OSM/Infatuation 30 d) but untested against a real second pull.
+
+## Next
+
+1. Batch 2 extraction with prompt v3 once the Infatuation pull ends and the matcher is rerun.
+2. Second review pass on v3 output, with a human spot-check of Claude's verdicts; scorecard refresh in the README.
+3. Refresh the interim stage reports (collect, match, extraction) with final numbers.
+4. Unmatched Infatuation venues inside Manhattan could become a third venue feed.
+5. Strip store-number suffixes (`#3056`) in name normalisation to recover chain matches held in review.
 
 ## Change log
 
 - 2026-09-02: scaffold, discover, dedupe, review collectors, LLM provider interface, this document.
+- 2026-09-02 (03:30-03:45): first review pass (20 insights: 4 correct / 15 partial / 1 wrong) → prompt v3; README written; PIPELINE.md refreshed with current counts.
 - 2026-09-02 (03:00-04:00): stage 6 extraction with grounding filter, stage 7 review loop and first scorecard, `venue_profiles` view, stage 8 freshness with TTLs, stage 9 claim readiness. Pipeline complete end to end; batch 2 extraction pending the Infatuation pull.
 - 2026-09-02 (later): Infatuation parser fix (body was nested under `content`; 1,806 preview-only rows re-pulled); stage 5 match_reviews built; stage 4 deferred.
