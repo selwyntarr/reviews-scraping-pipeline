@@ -75,9 +75,9 @@ export function ReviewPanel() {
 
   return (
     <div className="review">
-      <div className="toolbar" style={{ position: "static", marginBottom: 12 }}>
+      <div className="toolbar" style={{ margin: "0 0 12px" }}>
         <span className="brand">Extraction review</span>
-        <a href="/" className="control">← Explorer</a>
+        <label className="field"><span>&nbsp;</span><a href="/" className="control">← Explorer</a></label>
         <span className="stat grow">{items.length} insights · queue {queue.length} · you: {stats.reviewed} reviewed ({stats.correct} correct · {stats.partial} partial · {stats.wrong} wrong)</span>
         <label className="field"><span>Reviewer</span><input value={reviewer} onChange={(e) => setReviewer(e.target.value.trim() || "selwyn")} className="control" style={{ width: 110 }} /></label>
         <label className="field"><span>Queue</span><select value={only} onChange={(e) => { setOnly(e.target.value as typeof only); setIdx(0); }}>
@@ -86,7 +86,7 @@ export function ReviewPanel() {
         <label className="field"><span>Prompt</span><select value={version} onChange={(e) => { setVersion(e.target.value); setIdx(0); }}>
           <option value="">any prompt</option>{versions.map((v) => <option key={v} value={v}>{v}</option>)}
         </select></label>
-        <button className="control icon" onClick={toggle}>{mode === "dark" ? "☀︎" : "☾"}</button>
+        <label className="field"><span>&nbsp;</span><button className="control icon" onClick={toggle}>{mode === "dark" ? "☀︎" : "☾"}</button></label>
       </div>
       {error && <div className="empty">Error: {error}</div>}
       {!cur && !error && <div className="empty">Nothing in this queue.</div>}

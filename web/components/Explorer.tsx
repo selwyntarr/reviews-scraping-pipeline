@@ -50,14 +50,16 @@ export function Explorer() {
 
   return (
     <div className="app">
-      <MapView venues={venues} highlighted={resultIds} selected={selected} onSelect={setSelected} />
       <FilterBar filters={filters} onChange={setFilters} neighborhoods={neighborhoods} goodFors={goodFors}
         counts={{ venues: venues.length, insight: profiles.length, results: results.length }} />
-      {error && <div className="results"><div className="empty">Could not load data: {error}</div></div>}
-      {!error && <ResultsPanel results={results} byId={byId} selected={selected} onSelect={setSelected} loading={!venues.length} />}
-      {selected != null && (
-        <VenueDrawer venue={byId.get(selected) ?? null} profile={selectedProfile} evidence={evidence} claim={claim} onClose={() => setSelected(null)} />
-      )}
+      <div className="body">
+        <MapView venues={venues} highlighted={resultIds} selected={selected} onSelect={setSelected} />
+        {error && <div className="results"><div className="empty">Could not load data: {error}</div></div>}
+        {!error && <ResultsPanel results={results} byId={byId} selected={selected} onSelect={setSelected} loading={!venues.length} />}
+        {selected != null && (
+          <VenueDrawer venue={byId.get(selected) ?? null} profile={selectedProfile} evidence={evidence} claim={claim} onClose={() => setSelected(null)} />
+        )}
+      </div>
     </div>
   );
 }

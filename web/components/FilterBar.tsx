@@ -14,9 +14,10 @@ function MoodMenu({ value, onChange }: { value: string[]; onChange: (v: string[]
   }, []);
   const toggle = (t: string) => onChange(value.includes(t) ? value.filter((x) => x !== t) : [...value, t]);
   return (
-    <div className="menu" ref={ref}>
+    <div className="menu field" ref={ref}>
+      <span>Mood</span>
       <button className={`control${value.length ? " active" : ""}`} onClick={() => setOpen((o) => !o)}>
-        Mood{value.length ? <span className="count">{value.length}</span> : null} <span className="caret">▾</span>
+        {value.length ? <>{value.length} selected</> : "Any"}<span className="caret">▾</span>
       </button>
       {open && (
         <div className="popover">
@@ -57,10 +58,11 @@ export function FilterBar({ filters, onChange, neighborhoods, goodFors, counts }
         <select value={filters.goodFor ?? ""} onChange={(e) => onChange({ ...filters, goodFor: sel(e.target.value) })}>
           <option value="">Any</option>{goodFors.map((g) => <option key={g} value={g}>{g}</option>)}
         </select></label>
-      {active > 0 && <button className="link" onClick={() => onChange({ vibes: [], category: null, neighborhood: null, goodFor: null })}>Reset</button>}
+      <label className="field"><span>&nbsp;</span>
+        <button className="control" disabled={active === 0} onClick={() => onChange({ vibes: [], category: null, neighborhood: null, goodFor: null })}>Reset</button></label>
       <span className="stat grow">{counts.results} of {counts.insight.toLocaleString()} venues with insights · {counts.venues.toLocaleString()} mapped</span>
-      <a href="/review" className="control">Review</a>
-      <button className="control icon" onClick={toggle} title="Toggle theme">{mode === "dark" ? "☀︎" : "☾"}</button>
+      <label className="field"><span>&nbsp;</span><a href="/review" className="control">Review</a></label>
+      <label className="field"><span>&nbsp;</span><button className="control icon" onClick={toggle} title="Toggle theme">{mode === "dark" ? "☀︎" : "☾"}</button></label>
     </div>
   );
 }
