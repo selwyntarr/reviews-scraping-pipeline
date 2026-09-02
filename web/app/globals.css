@@ -52,7 +52,7 @@ html, body { margin: 0; height: 100%; background: var(--color-background); }
 
 /* toolbar */
 .toolbar { position: relative; z-index: 5; display: flex; gap: 10px; align-items: flex-end; margin: 12px 12px 0; flex-wrap: wrap;
-  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 6px; padding: 8px 12px; backdrop-filter: blur(10px); }
+  background: transparent; border: none; padding: 6px 4px 4px; }
 .toolbar .brand { margin-right: 8px; white-space: nowrap; font-size: 16px; }
 .field { display: flex; flex-direction: column; gap: 1px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
 .field select, .control, .field input { font: inherit; font-size: 13px; line-height: 20px; color: var(--ink); background: transparent; border: 1px solid var(--panel-border); border-radius: 4px; padding: 0 10px; height: 32px; box-sizing: border-box; cursor: pointer; text-decoration: none; -webkit-appearance: none; appearance: none; margin: 0; display: inline-flex; align-items: center; }
