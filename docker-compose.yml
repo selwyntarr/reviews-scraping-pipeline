@@ -1,0 +1,27 @@
+# Database is the Supabase local stack (`supabase start`), reached via host.docker.internal.
+# Ollama runs on the Mac host for Apple Silicon acceleration.
+services:
+  pipeline:
+    build: .
+    env_file: .env
+    volumes:
+      - ./reviews:/app/reviews
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  scheduler:
+    build: .
+    env_file: .env
+    volumes:
+      - ./reviews:/app/reviews
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["/bin/sh", "-c"]
+    # Nightly freshness run at 03:00 container time (simple loop, no cron daemon needed).
+    command:
+      - |
+        while true; do
+          if [ "$$(date +%H:%M)" = "03:00" ]; then /app/.venv/bin/pipeline freshness; sleep 60; fi
+          sleep 20
+        done
+    restart: unless-stopped
