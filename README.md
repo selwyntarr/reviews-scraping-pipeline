@@ -126,6 +126,21 @@ the quote shown, checked verbatim against the source.
 Where the text describes no atmosphere the fields stay empty rather than guessed. Per-venue
 aggregates (tag frequencies, consensus sentiment, evidence) live in the `venue_profiles` view.
 
+## Web explorer
+
+`web/` is a one-page Next.js app (Radix Themes, MapLibre GL with OpenFreeMap tiles, supabase-js against
+PostgREST views) that puts the pipeline's output on a map: every venue as a dot, insight-backed venues as
+cards you can filter by mood chips, category, neighborhood and "good for", and a drawer with the full
+profile, every evidence quote linked to its source, and the claim-readiness score with its components.
+Light and dark themes; Moodap's palette, our own simpler layout.
+
+```bash
+docker compose up -d web      # http://localhost:3000, hot reload from ./web
+```
+
+Reads `venue_map`, `venue_profiles`, `venue_evidence`, `claim_readiness` with the local anon key
+(`SUPABASE_ANON_KEY` in `.env`, from `supabase status -o env`).
+
 ## Sources and why these
 
 | Source | Role | Access |

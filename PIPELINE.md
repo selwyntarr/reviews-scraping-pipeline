@@ -41,6 +41,7 @@ flowchart LR
   D4 --> D6[6 extract insights]:::done
   D6 --> I[(insights)]:::n
   I --> VP[(venue_profiles)]:::n
+  VP --> WEB[web explorer]:::done
   I --> D7[7 review loop]:::done
   D7 --> SC[scorecard]:::n
   VP --> D9[9 claim readiness]:::done
@@ -66,6 +67,7 @@ credentials, so it is dashed.
 | 6 | extract_insights | Structured output per matched review: vibe tags from a 25-word controlled vocabulary, noise/crowd, best time, recurring events, good-for, sentiment, confidence, evidence quotes. A grounding filter drops any field without a verbatim quote. Provider interface: Ollama Qwen 2.5 7B locally, Anthropic API by env var. Resumable per (review, model, prompt version). | Done, batch 1 running | 81 insights so far (69 prompt v2, 12 v3); 81 venues have a profile. Prompt v1→v3 after two review passes; 7B kept over 3B (1.6× faster, worse); ~30–35 s/review under load. Batch 2 over all Manhattan reviews (~4,300, ~36 h resumable) queued behind the pull |
 | 7 | review loop | `review-sample` writes a markdown sample (source text, extraction, evidence); `review-ingest` reads verdicts per reviewer into `extraction_reviews`; `scorecard` prints verbatim-evidence rate, grounding drops, verdicts per field. Loop: Qwen extracts → Claude reviews → human spot-checks. | Done | First pass (20, reviewer claude): 4 correct · 15 partial · 1 wrong. Main fault: vibe inferred from awards/press, fixed in prompt v3 |
 | 8 | freshness | Expires `stage_progress` units older than a per-source TTL (DOHMH 7 d, wiki 14 d, OSM/Infatuation 30 d), reruns discover + collectors (upsert only changed content), relinks, re-extracts rows whose content hash changed, rescoring claims. `--force` expires everything. Runs nightly from the scheduler container. | Done | — |
+| web | explorer | One-page Next.js + Radix Themes + MapLibre app in `web/` over the read views (`venue_map`, `venue_profiles`, `venue_evidence`, `claim_readiness`); Docker dev service with hot reload. Mood chips + category/neighbourhood/good-for filters, cards with one insider line and its quote, drawer with evidence links and claim score. | Done | Verified headless: 14,191 dots, 116 cards, filters and dark mode working |
 | 9 | claim_readiness | Per-venue score = 0.45 insight richness + 0.25 activity (recent inspection) + 0.20 contact (website/phone) + 0.10 cross-source corroboration; components stored for explainability. | Done | 14,504 venues scored |
 
 ## Sources and why these
@@ -114,6 +116,7 @@ credentials, so it is dashed.
 ## Change log
 
 - 2026-09-02: scaffold, discover, dedupe, review collectors, LLM provider interface, this document.
+- 2026-09-02 (04:00-04:45): frontend grilled and built (Next.js, Radix Themes, MapLibre, Docker dev service); Docker daemon hang killed both background jobs, restarted; 404 sitemap entries now recorded instead of aborting the pull.
 - 2026-09-02 (03:30-03:45): first review pass (20 insights: 4 correct / 15 partial / 1 wrong) → prompt v3; README written; PIPELINE.md refreshed with current counts.
 - 2026-09-02 (03:00-04:00): stage 6 extraction with grounding filter, stage 7 review loop and first scorecard, `venue_profiles` view, stage 8 freshness with TTLs, stage 9 claim readiness. Pipeline complete end to end; batch 2 extraction pending the Infatuation pull.
 - 2026-09-02 (later): Infatuation parser fix (body was nested under `content`; 1,806 preview-only rows re-pulled); stage 5 match_reviews built; stage 4 deferred.
