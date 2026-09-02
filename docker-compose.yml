@@ -17,19 +17,15 @@ services:
   scheduler:
     build: .
     env_file: .env
-    environment: *container-env
+    environment:
+      <<: *container-env
+      TZ: ${TZ:-Asia/Manila}
     volumes:
       - ./reviews:/app/reviews
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    entrypoint: ["/bin/sh", "-c"]
-    # Nightly freshness run at 03:00 container time (simple loop, no cron daemon needed).
-    command:
-      - |
-        while true; do
-          if [ "$$(date +%H:%M)" = "03:00" ]; then /app/.venv/bin/pipeline freshness; sleep 60; fi
-          sleep 20
-        done
+    # Daily freshness run; time and TZ configurable from .env (FRESHNESS_AT, TZ).
+    command: ["schedule", "--at", "${FRESHNESS_AT:-03:00}"]
     restart: unless-stopped
 
   web:

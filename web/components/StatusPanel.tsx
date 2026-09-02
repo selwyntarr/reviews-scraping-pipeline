@@ -7,6 +7,7 @@ import { useTheme } from "./ThemeShell";
 type Row = { stage: string; run_id: number | null; status: string; started_at: string | null; finished_at: string | null;
   stats: Record<string, number> | null; error: string | null; units_done: number; last_unit_at: string | null; is_running: boolean; runs: number };
 type Counts = Record<string, number>;
+type Sched = { run_at: string; next_run_at: string | null; status: string; note: string | null; updated_at: string };
 
 const STAGES: { n: string; stage: string; label: string; total?: (c: Counts) => number | null; done?: (c: Counts) => number }[] = [
   { n: "1", stage: "discover", label: "pull OSM + DOHMH venues into raw_venues" },
@@ -27,10 +28,12 @@ export function StatusPanel() {
   const { mode, toggle } = useTheme();
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Counts>({});
+  const [sched, setSched] = useState<Sched | null>(null);
   const [tick, setTick] = useState(0);
   useEffect(() => {
     supabase.from("pipeline_status").select("*").then(({ data }) => setRows((data ?? []) as Row[]));
     supabase.from("pipeline_counts").select("*").single().then(({ data }) => setCounts((data ?? {}) as Counts));
+    supabase.from("scheduler_state").select("*").maybeSingle().then(({ data }) => setSched((data as Sched) ?? null));
     const t = setTimeout(() => setTick((x) => x + 1), 30000); return () => clearTimeout(t);
   }, [tick]);
   const byStage = new Map(rows.map((r) => [r.stage, r]));
@@ -65,6 +68,17 @@ export function StatusPanel() {
             </li>
           );
         })}
+      </ul>
+
+      <h5 className="counts-head">scheduler</h5>
+      <ul className="stages">
+        <li className={sched?.status === "running" ? "running" : ""}>
+          <code className="mark">{sched ? (sched.status === "running" ? "[~]" : "[x]") : "[ ]"}</code>
+          <div className="stage-main">
+            <div><code className="name">   scheduler</code> <span className="label">runs <code>freshness</code> daily{sched ? ` at ${sched.run_at}` : ""}</span></div>
+            <div className="stat">{sched ? <>{sched.status} · next run {fmt(sched.next_run_at)} · heartbeat {ago(sched.updated_at)}{sched.note ? ` · ${sched.note}` : ""}</> : "scheduler container not running"}</div>
+          </div>
+        </li>
       </ul>
 
       <h5 className="counts-head">tables</h5>

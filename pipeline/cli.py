@@ -117,6 +117,18 @@ def claim_readiness():
 
 
 @app.command()
+def schedule(
+    at: str = typer.Option("03:00", help="Daily run time, HH:MM in the container's local time"),
+    extract_limit: int | None = typer.Option(None, help="Cap on re-extractions per run"),
+    once: bool = typer.Option(False, help="Run at the next slot, then exit"),
+):
+    """Daemon: run `freshness` daily at --at, with heartbeats in scheduler_state."""
+    from .stages.schedule import run_schedule
+
+    run_schedule(at, extract_limit, once)
+
+
+@app.command()
 def freshness(
     extract_limit: int | None = typer.Option(None, help="Cap on re-extractions per run"),
     force: bool = typer.Option(False, help="Expire every unit regardless of TTL"),

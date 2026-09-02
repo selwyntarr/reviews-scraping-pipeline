@@ -59,3 +59,16 @@ def test_far_apart_different_street_is_penalised():
     a = rec("Joe's Pizza", "7", "CARMINE STREET", 40.7305, -74.0025, source="dohmh")
     b = rec("Joe's Pizza", "1435", "Broadway", 40.7550, -73.9870)
     assert score_pair(a, b)["score"] < 0.70
+
+
+def test_next_run_rolls_to_tomorrow_after_the_slot():
+    from datetime import UTC, datetime
+
+    from pipeline.stages.schedule import next_run
+
+    assert next_run("03:00", datetime(2026, 9, 3, 2, 0, tzinfo=UTC)) == datetime(
+        2026, 9, 3, 3, 0, tzinfo=UTC
+    )
+    assert next_run("03:00", datetime(2026, 9, 3, 4, 0, tzinfo=UTC)) == datetime(
+        2026, 9, 4, 3, 0, tzinfo=UTC
+    )
