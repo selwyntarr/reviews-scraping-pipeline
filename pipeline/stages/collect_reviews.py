@@ -18,6 +18,7 @@ import re
 from collections.abc import Iterator
 from datetime import date
 
+import httpx
 from psycopg.types.json import Jsonb
 
 from ..db import Run, connect, content_hash
@@ -141,7 +142,14 @@ def collect_infatuation(run: Run, client: Client, conn, max_pages: int | None) -
             continue
         if max_pages is not None and done >= max_pages:
             break
-        html = client.get(url, headers={"User-Agent": UA_BROWSERISH}).text
+        try:
+            html = client.get(url, headers={"User-Agent": UA_BROWSERISH}).text
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code != 404:
+                raise
+            run.bump("infatuation_404")  # dead sitemap entry; recorded so it is not retried
+            run.mark_done(unit, {"parsed": False, "status": 404})
+            continue
         item = parse_infatuation(html, url)
         if item is None or not item["text"].strip():
             run.bump("infatuation_unparsed")
