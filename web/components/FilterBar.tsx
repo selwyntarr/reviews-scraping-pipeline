@@ -44,7 +44,7 @@ export function FilterBar({ filters, onChange, neighborhoods, goodFors, counts }
   const active = filters.vibes.length + (filters.category ? 1 : 0) + (filters.neighborhood ? 1 : 0) + (filters.goodFor ? 1 : 0);
   return (
     <div className="toolbar">
-      <span className="brand">Venue Insight Explorer</span>
+      <label className="field text"><span>&nbsp;</span><span className="brand">Venue Insight Explorer</span></label>
       <MoodMenu value={filters.vibes} onChange={(vibes) => onChange({ ...filters, vibes })} />
       <label className="field"><span>Type</span>
         <select value={filters.category ?? ""} onChange={(e) => onChange({ ...filters, category: sel(e.target.value) })}>
@@ -60,7 +60,7 @@ export function FilterBar({ filters, onChange, neighborhoods, goodFors, counts }
         </select></label>
       <label className="field"><span>&nbsp;</span>
         <button className="control" disabled={active === 0} onClick={() => onChange({ vibes: [], category: null, neighborhood: null, goodFor: null })}>Reset</button></label>
-      <span className="stat grow">{counts.results} of {counts.insight.toLocaleString()} venues with insights · {counts.venues.toLocaleString()} mapped</span>
+      <label className="field text grow"><span>&nbsp;</span><span className="stat">{counts.results} of {counts.insight.toLocaleString()} venues with insights · {counts.venues.toLocaleString()} mapped</span></label>
       <label className="field"><span>&nbsp;</span><a href="/review" className="control">Review</a></label>
       <label className="field"><span>&nbsp;</span><button className="control icon" onClick={toggle} title="Toggle theme">{mode === "dark" ? "☀︎" : "☾"}</button></label>
     </div>

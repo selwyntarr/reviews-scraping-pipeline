@@ -76,9 +76,9 @@ export function ReviewPanel() {
   return (
     <div className="review">
       <div className="toolbar" style={{ margin: "0 0 12px" }}>
-        <span className="brand">Extraction review</span>
+        <label className="field text"><span>&nbsp;</span><span className="brand">Extraction review</span></label>
         <label className="field"><span>&nbsp;</span><a href="/" className="control">← Explorer</a></label>
-        <span className="stat grow">{items.length} insights · queue {queue.length} · you: {stats.reviewed} reviewed ({stats.correct} correct · {stats.partial} partial · {stats.wrong} wrong)</span>
+        <label className="field text grow"><span>&nbsp;</span><span className="stat">{items.length} insights · queue {queue.length} · you: {stats.reviewed} reviewed ({stats.correct} correct · {stats.partial} partial · {stats.wrong} wrong)</span></label>
         <label className="field"><span>Reviewer</span><input value={reviewer} onChange={(e) => setReviewer(e.target.value.trim() || "selwyn")} className="control" style={{ width: 110 }} /></label>
         <label className="field"><span>Queue</span><select value={only} onChange={(e) => { setOnly(e.target.value as typeof only); setIdx(0); }}>
           <option value="unreviewed">unreviewed by me</option><option value="all">all</option><option value="disagree">where I disagree with others</option>
