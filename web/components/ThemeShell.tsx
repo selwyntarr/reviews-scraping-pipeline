@@ -16,7 +16,7 @@ export function ThemeShell({ children }: { children: React.ReactNode }) {
   const toggle = () => setMode((m) => { const n = m === "dark" ? "light" : "dark"; try { localStorage.setItem("theme", n); } catch {} return n; });
   return (
     <Ctx.Provider value={{ mode, toggle }}>
-      <Theme appearance={mode} accentColor="indigo" grayColor="slate" radius="large" className={mode === "dark" ? "dark" : ""}>
+      <Theme appearance={mode} accentColor="indigo" grayColor="slate" radius="small" className={mode === "dark" ? "dark" : ""}>
         {children}
       </Theme>
     </Ctx.Provider>
