@@ -1,0 +1,50 @@
+@import "@radix-ui/themes/styles.css";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* Moodap palette on Radix tokens: indigo #4F46E5 → violet #8B5CF6, amber #FBBF24, slate neutrals. */
+.radix-themes {
+  --accent-9: #4f46e5; --accent-10: #4338ca; --accent-contrast: #fff;
+  --accent-a3: rgba(79, 70, 229, 0.12); --accent-a4: rgba(79, 70, 229, 0.2);
+  --amber: #fbbf24; --amber-deep: #f59e0b; --violet: #8b5cf6;
+  --color-background: #f8fafc; --panel: rgba(255, 255, 255, 0.92); --panel-border: #e5e7eb;
+  --ink: #0f172a; --ink-2: #334155; --muted: #6b7280;
+}
+.dark, .dark-theme { --color-background: #0f172a; --panel: rgba(15, 23, 42, 0.92); --panel-border: #1e293b; --ink: #f8fafc; --ink-2: #cbd5e1; --muted: #94a3b8; }
+html, body { margin: 0; height: 100%; background: var(--color-background); }
+.app { position: relative; height: 100vh; overflow: hidden; color: var(--ink); }
+.map { position: absolute; inset: 0; }
+.filters { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 5; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px; padding: 10px 14px; backdrop-filter: blur(10px); }
+.brand { font-weight: 700; letter-spacing: -0.01em; background: linear-gradient(135deg, #4f46e5, #8b5cf6); -webkit-background-clip: text; background-clip: text; color: transparent; margin-right: 6px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--panel-border); background: transparent; color: var(--ink-2); border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.chip:hover { border-color: var(--accent-9); }
+.chip.on { background: var(--accent-9); border-color: var(--accent-9); color: #fff; }
+.chip.amber.on { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+.results { position: absolute; top: 158px; bottom: 12px; left: 12px; width: 380px; z-index: 4; overflow: auto;
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px; padding: 10px; backdrop-filter: blur(10px); }
+.card { padding: 10px 12px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; }
+.card:hover { border-color: var(--accent-9); }
+.card.on { border-color: var(--accent-9); background: var(--accent-a3); }
+.card h4 { margin: 0 0 2px; font-size: 14px; }
+.meta { font-size: 12px; color: var(--muted); }
+.tip { margin-top: 6px; font-size: 12px; color: var(--ink-2); }
+.tip q { color: var(--muted); font-style: italic; }
+.tag { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--accent-a3); color: var(--accent-10); margin: 2px 4px 0 0; }
+.dark .tag, .dark-theme .tag { color: #c7d2fe; }
+.badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--panel-border); color: var(--muted); margin-right: 4px; }
+.badge.pos { border-color: #22c55e; color: #16a34a; } .badge.neg { border-color: #ef4444; color: #dc2626; } .badge.mix { border-color: var(--amber-deep); color: var(--amber-deep); }
+.drawer { position: absolute; top: 158px; bottom: 12px; right: 12px; width: 420px; z-index: 6; overflow: auto;
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px; padding: 16px 18px; backdrop-filter: blur(10px); }
+.drawer h2 { margin: 0 0 2px; font-size: 20px; }
+.section { margin-top: 14px; } .section h5 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.quote { font-size: 13px; border-left: 3px solid var(--amber); padding: 4px 10px; margin: 6px 0; color: var(--ink-2); }
+.quote small { display: block; color: var(--muted); }
+.bar { height: 6px; border-radius: 3px; background: var(--panel-border); overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg, #4f46e5, #8b5cf6); }
+.stat { font-size: 12px; color: var(--muted); }
+.close { float: right; background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.empty { padding: 20px; color: var(--muted); font-size: 13px; }
+@media (max-width: 900px) {
+  .results { width: auto; right: 12px; top: auto; height: 42vh; }
+  .drawer { width: auto; left: 12px; top: 158px; bottom: 44vh; }
+}

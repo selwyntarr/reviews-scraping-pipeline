@@ -14,3 +14,6 @@ data/
 agent-memory/
 .mcp.json
 .claude/
+node_modules/
+.next/
+web/.env*
