@@ -55,9 +55,13 @@ html, body { margin: 0; height: 100%; background: var(--color-background); }
   background: var(--panel); border: 1px solid var(--panel-border); border-radius: 6px; padding: 8px 12px; backdrop-filter: blur(10px); }
 .toolbar .brand { margin-right: 8px; white-space: nowrap; font-size: 16px; }
 .field { display: flex; flex-direction: column; gap: 1px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-.field select, .control, .field input { font: inherit; font-size: 13px; line-height: 20px; color: var(--ink); background: var(--color-background); border: 1px solid var(--panel-border); border-radius: 4px; padding: 0 10px; height: 32px; box-sizing: border-box; cursor: pointer; text-decoration: none; -webkit-appearance: none; appearance: none; margin: 0; display: inline-flex; align-items: center; }
+.field select, .control, .field input { font: inherit; font-size: 13px; line-height: 20px; color: var(--ink); background: transparent; border: 1px solid var(--panel-border); border-radius: 4px; padding: 0 10px; height: 32px; box-sizing: border-box; cursor: pointer; text-decoration: none; -webkit-appearance: none; appearance: none; margin: 0; display: inline-flex; align-items: center; }
 .field select { min-width: 150px; padding-right: 26px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 14px) 13px, calc(100% - 9px) 13px; background-size: 5px 5px; background-repeat: no-repeat; }
 .field > span { height: 12px; line-height: 12px; display: block; }
+.field select option { background: var(--color-background); color: var(--ink); }
+.control:focus, .field select:focus, .field input:focus { outline: none; }
+.control:focus-visible, .field select:focus-visible, .field input:focus-visible { outline: 1px solid var(--accent-9); outline-offset: 1px; }
+.control:hover, .field select:hover { border-color: var(--muted); }
 .field.text > span + * { height: 32px; display: inline-flex; align-items: center; font-size: 13px; text-transform: none; letter-spacing: 0; }
 .control.active { border-color: var(--accent-9); color: var(--accent-10); }
 .control:disabled { opacity: 0.45; cursor: default; }
