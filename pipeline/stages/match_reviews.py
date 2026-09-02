@@ -59,7 +59,9 @@ def _venue_recs(conn) -> list[Rec]:
 
 
 def _review_rec(r) -> Rec:
-    street = (r["street"] or "").split(",")[0].strip()  # "96 South St, New York, NY 10038" -> "96 South St"
+    street = (
+        (r["street"] or "").split(",")[0].strip()
+    )  # "96 South St, New York, NY 10038" -> "96 South St"
     hn = ""
     if street and street[0].isdigit():  # "127 E 34th St" -> housenumber + street
         hn, _, street = street.partition(" ")

@@ -61,6 +61,18 @@ def match_reviews():
 
 
 @app.command()
+def extract_insights(
+    limit: int | None = typer.Option(None, help="Max reviews to extract this run"),
+    source: list[str] | None = typer.Option(None, help="Restrict to sources"),
+    only_matched: bool = typer.Option(True, help="Only reviews linked to a venue"),
+):
+    """LLM insight extraction per review (resumable; re-extracts only changed text)."""
+    from .stages.extract_insights import run_extract_insights
+
+    run_extract_insights(limit, source, only_matched)
+
+
+@app.command()
 def freshness():
     """Nightly job: re-pull text and re-extract stale venues. (Later stages plug in here.)"""
     typer.echo("freshness: no downstream stages implemented yet")
