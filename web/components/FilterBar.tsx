@@ -35,9 +35,10 @@ function MoodMenu({ value, onChange }: { value: string[]; onChange: (v: string[]
   );
 }
 
-export function FilterBar({ filters, onChange, neighborhoods, goodFors, counts }: {
+export function FilterBar({ filters, onChange, neighborhoods, goodFors, counts, showList, onToggleList }: {
   filters: Filters; onChange: (f: Filters) => void; neighborhoods: string[]; goodFors: string[];
   counts: { venues: number; insight: number; results: number };
+  showList: boolean; onToggleList: () => void;
 }) {
   const { mode, toggle } = useTheme();
   const sel = (v: string) => (v === "" ? null : v);
@@ -61,6 +62,7 @@ export function FilterBar({ filters, onChange, neighborhoods, goodFors, counts }
       <label className="field"><span>&nbsp;</span>
         <button className="control" disabled={active === 0} onClick={() => onChange({ vibes: [], category: null, neighborhood: null, goodFor: null })}>Reset</button></label>
       <label className="field text grow"><span>&nbsp;</span><span className="stat">{counts.results} of {counts.insight.toLocaleString()} venues with insights · {counts.venues.toLocaleString()} mapped</span></label>
+      <label className="field"><span>&nbsp;</span><button className={`control${showList ? " active" : ""}`} onClick={onToggleList} title={showList ? "Hide list" : "Show list"}>{showList ? "Hide list" : "Show list"}</button></label>
       <label className="field"><span>&nbsp;</span><a href="/review" className="control">Review</a></label>
       <label className="field"><span>&nbsp;</span><button className="control icon" onClick={toggle} title="Toggle theme">{mode === "dark" ? "☀︎" : "☾"}</button></label>
     </div>
