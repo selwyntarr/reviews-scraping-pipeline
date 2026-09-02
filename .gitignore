@@ -9,3 +9,8 @@ supabase/.branches/
 reviews/*.md
 !reviews/.gitkeep
 data/
+
+# Local-only Claude memory kit (own git repo inside agent-memory/)
+agent-memory/
+.mcp.json
+.claude/
