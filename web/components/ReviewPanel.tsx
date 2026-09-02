@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { SOURCE_LABEL } from "@/lib/vocab";
@@ -77,7 +78,7 @@ export function ReviewPanel() {
     <div className="review">
       <div className="toolbar" style={{ margin: "0 0 12px" }}>
         <label className="field text"><span>&nbsp;</span><span className="brand">Extraction review</span></label>
-        <label className="field"><span>&nbsp;</span><a href="/" className="control">← Explorer</a></label>
+        <label className="field"><span>&nbsp;</span><Link href="/" className="control">← Explorer</Link></label>
         <label className="field text grow"><span>&nbsp;</span><span className="stat">{items.length} insights · queue {queue.length} · you: {stats.reviewed} reviewed ({stats.correct} correct · {stats.partial} partial · {stats.wrong} wrong)</span></label>
         <label className="field"><span>Reviewer</span><input value={reviewer} onChange={(e) => setReviewer(e.target.value.trim() || "selwyn")} className="control" style={{ width: 110 }} /></label>
         <label className="field"><span>Queue</span><select value={only} onChange={(e) => { setOnly(e.target.value as typeof only); setIdx(0); }}>

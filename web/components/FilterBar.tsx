@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CATEGORIES, VIBES } from "@/lib/vocab";
 import { useTheme } from "./ThemeShell";
@@ -63,7 +64,8 @@ export function FilterBar({ filters, onChange, neighborhoods, goodFors, counts, 
         <button className="control" disabled={active === 0} onClick={() => onChange({ vibes: [], category: null, neighborhood: null, goodFor: null })}>Reset</button></label>
       <label className="field text grow"><span>&nbsp;</span><span className="stat">{counts.results} of {counts.insight.toLocaleString()} venues with insights · {counts.venues.toLocaleString()} mapped</span></label>
       <label className="field"><span>&nbsp;</span><button className={`control${showList ? " active" : ""}`} onClick={onToggleList} title={showList ? "Hide list" : "Show list"}>{showList ? "Hide list" : "Show list"}</button></label>
-      <label className="field"><span>&nbsp;</span><a href="/review" className="control">Review</a></label>
+      <label className="field"><span>&nbsp;</span><Link href="/review" className="control">Review</Link></label>
+      <label className="field"><span>&nbsp;</span><Link href="/pipeline" className="control">Pipeline</Link></label>
       <label className="field"><span>&nbsp;</span><button className="control icon" onClick={toggle} title="Toggle theme">{mode === "dark" ? "☀︎" : "☾"}</button></label>
     </div>
   );

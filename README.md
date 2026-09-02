@@ -1,5 +1,7 @@
 # Venue Insight Pipeline
 
+[![ci](https://github.com/selwyntarr/reviews-scraping-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/selwyntarr/reviews-scraping-pipeline/actions/workflows/ci.yml)
+
 Multi-source venue discovery, deduplication and LLM insight extraction for Manhattan, built as a
 portfolio answer to a "mood-based venue discovery" data-engineering brief. Everything runs locally at
 zero cost: open data sources, Supabase (Postgres) in Docker, and a local Qwen model through Ollama,
