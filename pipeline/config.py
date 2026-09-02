@@ -16,7 +16,9 @@ class Settings(BaseSettings):
 
     overpass_url: str = "https://overpass-api.de/api/interpreter"
     socrata_app_token: str = ""
-    reddit_user_agent: str = "venue-insight-pipeline/0.1 (portfolio project)"
+    reddit_client_id: str = ""
+    reddit_client_secret: str = ""
+    reddit_user_agent: str = "macos:venue-insight-pipeline:0.1 (portfolio project)"
 
 
 @lru_cache

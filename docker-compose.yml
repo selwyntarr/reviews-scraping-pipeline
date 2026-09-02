@@ -1,9 +1,14 @@
 # Database is the Supabase local stack (`supabase start`), reached via host.docker.internal.
 # Ollama runs on the Mac host for Apple Silicon acceleration.
+x-env: &container-env
+  DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:54322/postgres
+  OLLAMA_BASE_URL: http://host.docker.internal:11434
+
 services:
   pipeline:
     build: .
     env_file: .env
+    environment: *container-env
     volumes:
       - ./reviews:/app/reviews
     extra_hosts:
@@ -12,6 +17,7 @@ services:
   scheduler:
     build: .
     env_file: .env
+    environment: *container-env
     volumes:
       - ./reviews:/app/reviews
     extra_hosts:

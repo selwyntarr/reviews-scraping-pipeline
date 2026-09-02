@@ -28,6 +28,18 @@ def dedupe():
 
 
 @app.command()
+def collect_text(
+    posts_per_query: int = typer.Option(50, help="Top posts per (subreddit, keyword) search"),
+    min_comments: int = typer.Option(5, help="Skip posts with fewer comments"),
+    max_posts: int | None = typer.Option(None, help="Cap on comment trees to fetch this run"),
+):
+    """Collect Reddit posts and comment trees via the official API into raw_posts/raw_comments."""
+    from .stages.collect_text import run_collect_text
+
+    run_collect_text(posts_per_query, min_comments, max_posts)
+
+
+@app.command()
 def freshness():
     """Nightly job: re-pull text and re-extract stale venues. (Later stages plug in here.)"""
     typer.echo("freshness: no downstream stages implemented yet")
