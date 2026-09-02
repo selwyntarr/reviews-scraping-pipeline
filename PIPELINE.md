@@ -38,17 +38,18 @@ flowchart LR
 
   RR --> D4[5 match reviews]:::done
   V --> D4
-  D4 --> D6[6 extract insights]:::todo
+  D4 --> D6[6 extract insights]:::done
   D6 --> I[(insights)]:::n
-  I --> D7[7 review sample]:::todo
+  I --> VP[(venue_profiles)]:::n
+  I --> D7[7 review loop]:::done
   D7 --> SC[scorecard]:::n
-  I --> D9[9 claim readiness]:::todo
-  D8[8 nightly freshness]:::todo -.-> D3
+  VP --> D9[9 claim readiness]:::done
+  D8[8 nightly freshness]:::done -.-> D3
   style S1 fill:#f4f8fc,stroke:#175cd3,color:#1a2233
   style S2 fill:#f4f8fc,stroke:#175cd3,color:#1a2233
 ```
 
-Solid boxes with a heavy border are built and verified. Dashed boxes are designed but not built.
+Solid boxes with a heavy border are built and verified. Dashed boxes are designed but not built (Reddit is coded but blocked on credentials).
 Cylinders are Postgres tables in the local Supabase stack. The Reddit path is coded but blocked on API
 credentials, so it is dashed.
 
@@ -62,10 +63,10 @@ credentials, so it is dashed.
 | 3 | collect_text (Reddit) | Subreddit keyword search + comment trees via the official OAuth API. | Blocked | Reddit refuses anonymous JSON from this IP; needs script-app credentials or gets dropped |
 | 5 | match_reviews | Deterministic matcher links each `raw_reviews` row to a canonical venue using the dedupe blocking + scoring against the `venues` table; Manhattan polygon filter; every link kept in `review_venue_links` with score components. | Done (reruns as collection grows) | On the first 524 rows: 221 matched, 57 review, 188 unmatched (mostly defunct Wikipedia venues), 58 outside Manhattan. Random matched samples all correct |
 | 4 | mention extraction | LLM pulls venue mentions out of free text that does not name its venue (Reddit-style). | Deferred | Not needed for the three adopted sources, which all name their venue |
-| 6 | extract_insights | Structured output per matched text: vibe tags, noise/crowd, best time, recurring events, sentiment, verbatim evidence quote, confidence. Provider interface: Ollama Qwen 2.5 7B locally, Anthropic API by env var. | Designed | Ollama structured output verified end to end (21 s first call) |
-| 7 | review_sample | Writes a markdown sample of extractions per run; reviewer verdicts ingested by CLI into `extraction_reviews`; README scorecard computed from them. Loop: Qwen extracts → Claude reviews → human spot-checks. | Designed | — |
-| 8 | freshness | Nightly compose service re-pulls text and re-extracts stale venues. Needs a TTL / `--force` because `stage_progress` marks units done permanently. | Designed | Scheduler container exists; job body pending |
-| 9 | claim_readiness | Per-venue score from insight confidence, mention count and contact details, as a claim-conversion priority signal. | Designed | — |
+| 6 | extract_insights | Structured output per matched review: vibe tags from a 25-word controlled vocabulary, noise/crowd, best time, recurring events, good-for, sentiment, confidence, evidence quotes. A grounding filter drops any field without a verbatim quote. Provider interface: Ollama Qwen 2.5 7B locally, Anthropic API by env var. Resumable per (review, model, prompt version). | Done, batch 1 running | Prompt v1→v3 after two review passes; 7B kept over 3B; ~30 s/review under load |
+| 7 | review loop | `review-sample` writes a markdown sample (source text, extraction, evidence); `review-ingest` reads verdicts per reviewer into `extraction_reviews`; `scorecard` prints verbatim-evidence rate, grounding drops, verdicts per field. Loop: Qwen extracts → Claude reviews → human spot-checks. | Done | First pass (20, reviewer claude): 4 correct · 15 partial · 1 wrong. Main fault: vibe inferred from awards/press, fixed in prompt v3 |
+| 8 | freshness | Expires `stage_progress` units older than a per-source TTL (DOHMH 7 d, wiki 14 d, OSM/Infatuation 30 d), reruns discover + collectors (upsert only changed content), relinks, re-extracts rows whose content hash changed, rescoring claims. `--force` expires everything. Runs nightly from the scheduler container. | Done | — |
+| 9 | claim_readiness | Per-venue score = 0.45 insight richness + 0.25 activity (recent inspection) + 0.20 contact (website/phone) + 0.10 cross-source corroboration; components stored for explainability. | Done | 14,504 venues scored |
 
 ## Sources and why these
 
@@ -105,4 +106,5 @@ credentials, so it is dashed.
 ## Change log
 
 - 2026-09-02: scaffold, discover, dedupe, review collectors, LLM provider interface, this document.
+- 2026-09-02 (03:00-04:00): stage 6 extraction with grounding filter, stage 7 review loop and first scorecard, `venue_profiles` view, stage 8 freshness with TTLs, stage 9 claim readiness. Pipeline complete end to end; batch 2 extraction pending the Infatuation pull.
 - 2026-09-02 (later): Infatuation parser fix (body was nested under `content`; 1,806 preview-only rows re-pulled); stage 5 match_reviews built; stage 4 deferred.

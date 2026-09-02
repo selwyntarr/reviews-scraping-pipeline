@@ -109,9 +109,22 @@ def scorecard():
 
 
 @app.command()
-def freshness():
-    """Nightly job: re-pull text and re-extract stale venues. (Later stages plug in here.)"""
-    typer.echo("freshness: no downstream stages implemented yet")
+def claim_readiness():
+    """Score every venue for claim-conversion priority (explainable components stored)."""
+    from .stages.claim_readiness import run_claim_readiness
+
+    run_claim_readiness()
+
+
+@app.command()
+def freshness(
+    extract_limit: int | None = typer.Option(None, help="Cap on re-extractions per run"),
+    force: bool = typer.Option(False, help="Expire every unit regardless of TTL"),
+):
+    """Nightly job: expire stale units per source TTL, re-pull, relink, re-extract changed rows, rescore."""
+    from .stages.freshness import run_freshness
+
+    run_freshness(extract_limit, force)
 
 
 @app.command()

@@ -138,8 +138,8 @@ def scorecard() -> dict:
                from extraction_reviews e, jsonb_each_text(e.field_verdicts) kv group by 1,2,3 order by 1,2,3"""
         ).fetchall()
         dropped = conn.execute(
-            "select coalesce(sum(jsonb_array_length(raw_output->'dropped_fields')),0) from insights"
-        ).fetchone()[0]
+            "select coalesce(sum(jsonb_array_length(raw_output->'dropped_fields')),0) as n from insights"
+        ).fetchone()["n"]
     return {
         "insights": total["n"],
         "evidence_verbatim_rate": round(float(total["v"] or 0), 3),
