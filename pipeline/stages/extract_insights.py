@@ -18,7 +18,7 @@ from ..llm import extract_json, model_name
 
 log = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 
 VIBE_VOCAB = [
     "casual",
@@ -54,13 +54,14 @@ Rules:
 - Use only what the text states or clearly implies about THIS venue. Never invent.
 - vibe_tags: choose ONLY from this list: {", ".join(VIBE_VOCAB)}. Atmosphere only, never cuisine or dishes.
 - noise_level / crowd_level: only if the text describes sound or how busy it gets; else null.
-- best_time: the moment the text recommends or warns about (a day, time, season, "before 7pm", "weekday lunch"); else null.
-- recurring_events: regular happenings the text names (live jazz Tuesdays, trivia night, happy hour 4-7); else [].
-- good_for: occasions the text recommends it for (date night, big groups, solo lunch, kids, work meetings); else [].
+- best_time: a specific day, time, season or condition the text recommends or warns about; else null.
+- recurring_events: regular scheduled happenings the text explicitly names; else [].
+- good_for: occasions or company the text explicitly recommends the venue for; else []. Most reviews say nothing: leave it empty.
 - sentiment: the reviewer's overall verdict.
-- evidence: for EVERY non-null field and non-empty list, one item whose quote is an exact, character-for-character
-  substring of the review text. Do not paraphrase, shorten with ellipses, or fix typos. If you cannot quote it,
-  leave the field null/empty instead.
+- evidence: for EVERY non-null field and non-empty list, one item with field set to the field NAME (vibe_tags,
+  noise_level, crowd_level, best_time, recurring_events, good_for, sentiment) and quote an exact,
+  character-for-character substring of the review text that supports it. No paraphrase, no ellipses, no fixes.
+  A field with no verbatim supporting quote will be discarded, so leave it null/empty instead of guessing.
 - confidence: 0-1, how well the text supports the whole extraction."""
 
 SCHEMA = {
@@ -109,6 +110,31 @@ def evidence_verbatim(evidence: list[dict], text: str) -> bool:
     return all(_norm_quote(e.get("quote", "")) in t for e in evidence) if evidence else True
 
 
+GROUNDED_FIELDS = (
+    "vibe_tags",
+    "noise_level",
+    "crowd_level",
+    "best_time",
+    "recurring_events",
+    "good_for",
+)
+
+
+def ground(out: dict, text: str) -> tuple[dict, list[str]]:
+    """Drop any grounded field that lacks a verbatim supporting quote. Returns (filtered, dropped_fields)."""
+    t = _norm_quote(text)
+    supported = {
+        e.get("field") for e in out.get("evidence", []) if _norm_quote(e.get("quote", "")) in t
+    }
+    dropped = []
+    for f in GROUNDED_FIELDS:
+        v = out.get(f)
+        if (v not in (None, [], "")) and f not in supported:
+            out[f] = [] if isinstance(v, list) else None
+            dropped.append(f)
+    return out, dropped
+
+
 def run_extract_insights(limit: int | None, sources: list[str] | None, only_matched: bool) -> None:
     model = model_name()
     with Run("extract_insights") as run, connect() as conn:
@@ -134,6 +160,9 @@ def run_extract_insights(limit: int | None, sources: list[str] | None, only_matc
             )
             ms = int((time.time() - t0) * 1000)
             verbatim = evidence_verbatim(out.get("evidence", []), r["text"])
+            raw = dict(out)
+            out, dropped = ground(out, r["text"])
+            raw["dropped_fields"] = dropped
             conn.execute(
                 """insert into insights (raw_review_id, venue_id, model, prompt_version, content_hash, vibe_tags,
                        noise_level, crowd_level, best_time, recurring_events, good_for, sentiment, evidence,
@@ -171,6 +200,7 @@ def run_extract_insights(limit: int | None, sources: list[str] | None, only_matc
             )
             run.bump("extracted")
             run.bump("evidence_verbatim" if verbatim else "evidence_paraphrased")
+            run.bump("fields_dropped", len(dropped))
             run.stats["ms_total"] = run.stats.get("ms_total", 0) + ms
             if run.stats["extracted"] % 25 == 0:
                 log.info("progress: %s", run.stats)

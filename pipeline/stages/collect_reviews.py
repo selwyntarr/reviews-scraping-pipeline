@@ -104,7 +104,9 @@ def parse_infatuation(html: str, url: str) -> dict | None:
     body: list[str] = []
     content = deref(review.get("content")) or {}
     _rich_text(content.get("json"), body)
-    text = (review.get("preview") or "").strip() + "\n\n" + "".join(body).strip()
+    preview, body_text = (review.get("preview") or "").strip(), "".join(body).strip()
+    # The preview is usually the body's first sentence; keep it only when it adds something.
+    text = body_text if body_text.startswith(preview[:40]) else f"{preview}\n\n{body_text}".strip()
     pub = (review.get("publishDate") or "")[:10]
     return {
         "source_id": slug,
