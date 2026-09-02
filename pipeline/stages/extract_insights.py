@@ -18,7 +18,7 @@ from ..llm import extract_json, model_name
 
 log = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v2"
+PROMPT_VERSION = "v3"
 
 VIBE_VOCAB = [
     "casual",
@@ -53,6 +53,10 @@ SYSTEM = f"""You extract structured venue insights from one review of one venue.
 Rules:
 - Use only what the text states or clearly implies about THIS venue. Never invent.
 - vibe_tags: choose ONLY from this list: {", ".join(VIBE_VOCAB)}. Atmosphere only, never cuisine or dishes.
+  Tag only what the text DESCRIBES about the room, decor, crowd, service style or mood. Never infer a vibe from
+  awards, critics' lists, Michelin stars, prices, ownership, chefs, history, filming locations or press mentions:
+  those say nothing about atmosphere. If the text describes no atmosphere, vibe_tags is [].
+- good_for: occasions or company only (e.g. a type of visit), never a dish or a menu item.
 - noise_level / crowd_level: only if the text describes sound or how busy it gets; else null.
 - best_time: a specific day, time, season or condition the text recommends or warns about; else null.
 - recurring_events: regular scheduled happenings the text explicitly names; else [].
