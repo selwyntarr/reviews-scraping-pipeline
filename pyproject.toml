@@ -11,16 +11,18 @@ dependencies = [
     "typer>=0.12",
     "tenacity>=9.0",
     "rapidfuzz>=3.9",
-    "python-geohash>=0.8.5",
     "shapely>=2.1.2",
-    "playwright>=1.62.0",
 ]
 
 [project.scripts]
 pipeline = "pipeline.cli:app"
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = [
+    "playwright>=1.62.0",
+    "pytest>=8",
+    "ruff>=0.6",
+]
 
 [build-system]
 requires = ["hatchling"]

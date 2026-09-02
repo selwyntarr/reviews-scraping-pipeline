@@ -35,3 +35,11 @@ def test_housenumber_and_zip():
 def test_store_numbers_are_dropped():
     assert norm_name("CHIPOTLE MEXICAN GRILL #3056") == "chipotle mexican grill"
     assert norm_name("Dunkin' #12345") == "dunkin"
+
+
+def test_geohash_matches_reference_values():
+    from pipeline.geohash import encode, neighbors
+
+    assert encode(57.64911, 10.40744, 11) == "u4pruydqqvj"  # Wikipedia's worked example
+    assert encode(42.6, -5.6, 5) == "ezs42"  # canonical example from the geohash spec
+    assert set(neighbors("ezs42")) == {"ezs48", "ezs40", "ezs43", "ezefr", "ezs49", "ezefx", "ezs41", "ezefp"}

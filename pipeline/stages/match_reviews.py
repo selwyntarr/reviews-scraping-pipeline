@@ -10,8 +10,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-import geohash
-
+from .. import geohash
 from ..db import Run, connect
 from ..geo import contains, load_boundary
 from ..http import Client

@@ -12,9 +12,9 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-import geohash
 from rapidfuzz import fuzz
 
+from .. import geohash
 from ..db import Run, connect
 from ..normalize import norm_housenumber, norm_name, norm_phone, norm_street, norm_zip
 
