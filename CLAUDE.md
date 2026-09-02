@@ -19,3 +19,8 @@ Design decisions live in PLAN.md. Read it before changing pipeline stages.
 - `/standup` opens a session, `/wrap` closes it. Weekly: `/memory-audit` then `/memory-backup`.
 - `agent-memory/` and `.claude/` are gitignored and local-only; the DB is never committed.
 - Machine clock is labelled PST but is actually UTC+8. Convert explicitly.
+
+## Git
+- Conventional Commits: `feat(scope): …`, `fix(scope): …`, `docs: …`, `style(web): …`, `chore: …`. Scopes: discover, dedupe, collect, match, extract, review, pipeline, web.
+- No AI attribution: no `Co-Authored-By` or session trailers in commits or PR bodies.
+- Commit as selwyntarr / selwyntarr@gmail.com. Push to `main` only when asked.
