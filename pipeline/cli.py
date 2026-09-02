@@ -40,6 +40,19 @@ def collect_text(
 
 
 @app.command()
+def collect_reviews(
+    source: list[str] | None = typer.Option(
+        None, help="wikipedia, wikivoyage, infatuation (default all)"
+    ),
+    max_pages: int | None = typer.Option(None, help="Cap on Infatuation pages fetched this run"),
+):
+    """Collect venue reviews/descriptions from open web sources into raw_reviews."""
+    from .stages.collect_reviews import run_collect_reviews
+
+    run_collect_reviews(source or ["wikipedia", "wikivoyage", "infatuation"], max_pages)
+
+
+@app.command()
 def freshness():
     """Nightly job: re-pull text and re-extract stale venues. (Later stages plug in here.)"""
     typer.echo("freshness: no downstream stages implemented yet")

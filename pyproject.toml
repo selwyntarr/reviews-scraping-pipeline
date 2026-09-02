@@ -13,6 +13,7 @@ dependencies = [
     "rapidfuzz>=3.9",
     "python-geohash>=0.8.5",
     "shapely>=2.1.2",
+    "playwright>=1.62.0",
 ]
 
 [project.scripts]
