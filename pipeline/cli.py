@@ -20,6 +20,14 @@ def discover(
 
 
 @app.command()
+def dedupe():
+    """Build canonical venues from raw_venues (deterministic full rebuild)."""
+    from .stages.dedupe import run_dedupe
+
+    run_dedupe()
+
+
+@app.command()
 def freshness():
     """Nightly job: re-pull text and re-extract stale venues. (Later stages plug in here.)"""
     typer.echo("freshness: no downstream stages implemented yet")
