@@ -102,10 +102,8 @@ def parse_infatuation(html: str, url: str) -> dict | None:
                 if "/perfect-for/" in path:
                     tags.append("perfect-for:" + path.rsplit("/", 1)[-1])
     body: list[str] = []
-    for v in state.values():
-        if isinstance(v, dict) and v.get("__typename") == "PostReviewContent":
-            _rich_text(v.get("json"), body)
-            break
+    content = deref(review.get("content")) or {}
+    _rich_text(content.get("json"), body)
     text = (review.get("preview") or "").strip() + "\n\n" + "".join(body).strip()
     pub = (review.get("publishDate") or "")[:10]
     return {
