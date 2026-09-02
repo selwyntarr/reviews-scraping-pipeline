@@ -36,7 +36,7 @@ flowchart LR
   RD -.-> D3
   D3 --> RR[(raw_reviews)]:::n
 
-  RR --> D4[4-5 mention + match]:::todo
+  RR --> D4[5 match reviews]:::done
   V --> D4
   D4 --> D6[6 extract insights]:::todo
   D6 --> I[(insights)]:::n
@@ -60,7 +60,8 @@ credentials, so it is dashed.
 | 2 | dedupe | Normalise names/streets/phones, block by geohash (150 m) or zip+street, score name + address + distance + phone, merge same-source re-registrations, greedy one-to-one cross-source matching with a near-certain override. Every scored pair kept in `match_candidates`. | Done | 19,630 raw → 14,504 venues; 4,892 cross-source pairs matched; 436 DOHMH re-registrations + 43 OSM double-mappings merged; 1,486 pairs held for review. 10 unit tests |
 | 3 | collect_reviews | Venue-centric prose from open web sources into `raw_reviews`: Infatuation review pages (sitemap → server-rendered JSON), Wikipedia category members (full extracts + coords), Wikivoyage eat/drink listings on 19 district pages. | Running | Infatuation 974 / 8,142 pages (background pull); Wikipedia 235; Wikivoyage ~200 (rerun in progress) |
 | 3 | collect_text (Reddit) | Subreddit keyword search + comment trees via the official OAuth API. | Blocked | Reddit refuses anonymous JSON from this IP; needs script-app credentials or gets dropped |
-| 4-5 | mention + match | LLM pulls venue mentions from free text; deterministic matcher links them (and the review sources' own venue records) to `venues`. | Next | — |
+| 5 | match_reviews | Deterministic matcher links each `raw_reviews` row to a canonical venue using the dedupe blocking + scoring against the `venues` table; Manhattan polygon filter; every link kept in `review_venue_links` with score components. | Done (reruns as collection grows) | On the first 524 rows: 221 matched, 57 review, 188 unmatched (mostly defunct Wikipedia venues), 58 outside Manhattan. Random matched samples all correct |
+| 4 | mention extraction | LLM pulls venue mentions out of free text that does not name its venue (Reddit-style). | Deferred | Not needed for the three adopted sources, which all name their venue |
 | 6 | extract_insights | Structured output per matched text: vibe tags, noise/crowd, best time, recurring events, sentiment, verbatim evidence quote, confidence. Provider interface: Ollama Qwen 2.5 7B locally, Anthropic API by env var. | Designed | Ollama structured output verified end to end (21 s first call) |
 | 7 | review_sample | Writes a markdown sample of extractions per run; reviewer verdicts ingested by CLI into `extraction_reviews`; README scorecard computed from them. Loop: Qwen extracts → Claude reviews → human spot-checks. | Designed | — |
 | 8 | freshness | Nightly compose service re-pulls text and re-extracts stale venues. Needs a TTL / `--force` because `stage_progress` marks units done permanently. | Designed | Scheduler container exists; job body pending |
@@ -104,3 +105,4 @@ credentials, so it is dashed.
 ## Change log
 
 - 2026-09-02: scaffold, discover, dedupe, review collectors, LLM provider interface, this document.
+- 2026-09-02 (later): Infatuation parser fix (body was nested under `content`; 1,806 preview-only rows re-pulled); stage 5 match_reviews built; stage 4 deferred.

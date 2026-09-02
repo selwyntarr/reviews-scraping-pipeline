@@ -53,6 +53,14 @@ def collect_reviews(
 
 
 @app.command()
+def match_reviews():
+    """Link raw_reviews rows to canonical venues (deterministic, rebuilt each run)."""
+    from .stages.match_reviews import run_match_reviews
+
+    run_match_reviews()
+
+
+@app.command()
 def freshness():
     """Nightly job: re-pull text and re-extract stale venues. (Later stages plug in here.)"""
     typer.echo("freshness: no downstream stages implemented yet")
