@@ -39,7 +39,9 @@ FIELDS = (
 BLOCK_RE = re.compile(r"^### insight (\d+) .*?$", re.MULTILINE)
 
 
-def write_sample(n: int, out_dir: Path, unreviewed_only: bool, prompt_version: str | None = None) -> Path:
+def write_sample(
+    n: int, out_dir: Path, unreviewed_only: bool, prompt_version: str | None = None
+) -> Path:
     with Run("review_sample") as run, connect() as conn:
         rows = conn.execute(
             """select i.id, i.venue_id, r.source, r.venue_name, r.text, i.vibe_tags, i.noise_level, i.crowd_level,

@@ -18,7 +18,7 @@ from ..llm import extract_json, model_name
 
 log = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v3"
+PROMPT_VERSION = "v5"
 
 VIBE_VOCAB = [
     "casual",
@@ -58,10 +58,18 @@ Rules:
   those say nothing about atmosphere. If the text describes no atmosphere, vibe_tags is [].
 - good_for: occasions or company only (e.g. a type of visit), never a dish or a menu item.
 - noise_level / crowd_level: only if the text describes sound or how busy it gets; else null.
-- best_time: a specific day, time, season or condition the text recommends or warns about; else null.
-- recurring_events: regular scheduled happenings the text explicitly names; else [].
-- good_for: occasions or company the text explicitly recommends the venue for; else []. Most reviews say nothing: leave it empty.
-- sentiment: the reviewer's overall verdict.
+- best_time: LOOK for it: mentions of lines or waits, "show up early", "avoid weekends", "weeknights", opening hours,
+  "open until 3am", "before the show", brunch-only relevance. Turn them into a short recommendation; else null.
+- recurring_events: LOOK for regular happenings: live music, open mic, trivia, happy hour, DJ nights, weekly specials;
+  quote the sentence; else [].
+- good_for: the occasion or company the text itself recommends the venue for, in the text's own words. NEVER a type
+  of person, a dish, or a remark about service. Most reviews say nothing: leave it empty.
+- Atmosphere words to watch for in vibe_tags: outdoor seating or patio → outdoor-seating; open very late → late-night;
+  order at the counter → counter-service; cash-only, bare, unpretentious → no-frills; "tourists" → tourist-heavy;
+  "families", "kids" → family-friendly.
+- sentiment: the reviewer's overall verdict. A review that recommends, praises or enjoys the place is "positive".
+  Use "neutral" ONLY when the text passes no judgement at all (a pure encyclopedia entry or listing); "mixed" only
+  when praise and criticism both appear.
 - evidence: for EVERY non-null field and non-empty list, one item with field set to the field NAME (vibe_tags,
   noise_level, crowd_level, best_time, recurring_events, good_for, sentiment) and quote an exact,
   character-for-character substring of the review text that supports it. No paraphrase, no ellipses, no fixes.
@@ -80,7 +88,7 @@ SCHEMA = {
         "best_time": {"type": ["string", "null"]},
         "recurring_events": {"type": "array", "items": {"type": "string"}},
         "good_for": {"type": "array", "items": {"type": "string"}},
-        "sentiment": {"type": "string", "enum": ["positive", "mixed", "negative"]},
+        "sentiment": {"type": "string", "enum": ["positive", "mixed", "negative", "neutral"]},
         "evidence": {
             "type": "array",
             "items": {
@@ -139,7 +147,12 @@ def ground(out: dict, text: str) -> tuple[dict, list[str]]:
     return out, dropped
 
 
-def run_extract_insights(limit: int | None, sources: list[str] | None, only_matched: bool) -> None:
+def run_extract_insights(
+    limit: int | None,
+    sources: list[str] | None,
+    only_matched: bool,
+    review_ids: list[int] | None = None,
+) -> None:
     model = model_name()
     with Run("extract_insights") as run, connect() as conn:
         q = """
@@ -150,10 +163,13 @@ def run_extract_insights(limit: int | None, sources: list[str] | None, only_matc
             where (i.id is null or i.content_hash <> r.content_hash)
               and l.decision = any(%s)
               and (%s::text[] is null or r.source = any(%s))
+              and (%s::bigint[] is null or r.id = any(%s))
             order by r.id
         """
         decisions = ["matched"] if only_matched else ["matched", "review", "unmatched"]
-        rows = conn.execute(q, (model, PROMPT_VERSION, decisions, sources, sources)).fetchall()
+        rows = conn.execute(
+            q, (model, PROMPT_VERSION, decisions, sources, sources, review_ids, review_ids)
+        ).fetchall()
         if limit:
             rows = rows[:limit]
         log.info("%d reviews to extract with %s/%s", len(rows), model, PROMPT_VERSION)
