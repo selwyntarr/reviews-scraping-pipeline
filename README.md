@@ -52,7 +52,7 @@ uv run pipeline status
 docker compose up -d web scheduler      # explorer at http://localhost:3000, nightly freshness
 ```
 
-`docker compose run --rm pipeline <command>` runs any stage in a container. `LLM_PROVIDER=anthropic`
+Every stage logs to `logs/pipeline.log` (daily rotation, 14 days kept); `uv run pipeline logs --stage extract_insights` tails it. `docker compose run --rm pipeline <command>` runs any stage in a container. `LLM_PROVIDER=anthropic`
 plus an API key swaps the model. `uv run pytest` runs the tests; CI runs ruff, pytest, tsc and eslint.
 
 ## Web explorer

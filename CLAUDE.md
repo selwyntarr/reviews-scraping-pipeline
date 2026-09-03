@@ -8,7 +8,7 @@ Web: `docker compose up -d web` (never `npm install` on the host; edit `web/pack
 
 ## Rules
 - `raw_*` tables are never mutated downstream; every stage is idempotent via `stage_progress`.
-- External calls go through `pipeline/http.py`. Schema changes are new files in `supabase/migrations/`.
+- Logging via `pipeline/logging_setup.py` (console + `logs/pipeline.log`); never print. External calls go through `pipeline/http.py`. Schema changes are new files in `supabase/migrations/`.
 - After a collector's first hundred rows, check average text length and one full row before letting it run.
 - Verify model output mechanically (verbatim evidence) before trusting it.
 

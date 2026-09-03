@@ -17,3 +17,4 @@ agent-memory/
 node_modules/
 .next/
 web/.env*
+logs/

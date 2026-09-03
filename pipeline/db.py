@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any, Self
@@ -45,6 +47,7 @@ class Run:
         self.stats: dict[str, Any] = {}
         self.id: int | None = None
         self.conn: psycopg.Connection | None = None
+        self._t0 = time.monotonic()
 
     def __enter__(self) -> Self:
         self.conn = psycopg.connect(settings().database_url, row_factory=dict_row, autocommit=True)
@@ -52,7 +55,7 @@ class Run:
             "insert into pipeline_runs (stage) values (%s) returning id", (self.stage,)
         ).fetchone()
         self.id = row["id"]
-        log.info("run %s started: stage=%s", self.id, self.stage)
+        log.info("run %s started: stage=%s pid=%s", self.id, self.stage, os.getpid())
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:
@@ -68,7 +71,14 @@ class Run:
             "where id = %s",
             (status, Jsonb(self.stats), error, self.id),
         )
-        log.info("run %s %s: %s", self.id, status, self.stats)
+        log.info(
+            "run %s %s after %.0fs: %s%s",
+            self.id,
+            status,
+            time.monotonic() - self._t0,
+            self.stats,
+            f" error={error}" if error else "",
+        )
         self.conn.close()
         return False
 

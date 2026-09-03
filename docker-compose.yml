@@ -3,6 +3,7 @@
 x-env: &container-env
   DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:54322/postgres
   OLLAMA_BASE_URL: http://host.docker.internal:11434
+  LOG_DIR: /app/logs
 
 services:
   pipeline:
@@ -11,6 +12,7 @@ services:
     environment: *container-env
     volumes:
       - ./reviews:/app/reviews
+      - ./logs:/app/logs
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -22,6 +24,7 @@ services:
       TZ: ${TZ:-Asia/Manila}
     volumes:
       - ./reviews:/app/reviews
+      - ./logs:/app/logs
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # Daily freshness run; time and TZ configurable from .env (FRESHNESS_AT, TZ).

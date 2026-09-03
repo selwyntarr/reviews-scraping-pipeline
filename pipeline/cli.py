@@ -1,10 +1,10 @@
-import logging
-
 import typer
 
 app = typer.Typer(help="Venue insight pipeline", no_args_is_help=True)
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+from .logging_setup import setup_logging
+
+LOG_PATH = setup_logging()
 
 
 @app.command()
@@ -137,6 +137,19 @@ def freshness(
     from .stages.freshness import run_freshness
 
     run_freshness(extract_limit, force)
+
+
+@app.command()
+def logs(
+    lines: int = typer.Option(40, help="Tail this many lines"),
+    stage: str | None = typer.Option(None, help="Only lines mentioning this stage"),
+):
+    """Tail the pipeline log file."""
+    text = LOG_PATH.read_text(encoding="utf-8").splitlines() if LOG_PATH.exists() else []
+    if stage:
+        text = [line for line in text if stage in line]
+    typer.echo(f"# {LOG_PATH}")
+    typer.echo("\n".join(text[-lines:]))
 
 
 @app.command()
