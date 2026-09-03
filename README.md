@@ -79,8 +79,19 @@ pairs from being orphaned by the one-to-one rule. Venue ids are stable across re
 The pipeline verifies each quote against the source and drops fields without one, logging what it
 dropped. That mechanically removed the invented "date night / solo lunch" values of the first
 prompt. What it cannot catch is inference ("located in The Fifth Avenue Hotel" quoted as evidence for
-"upscale"), which is what the review loop exists for; the first pass led to prompt v3, which forbids
-deriving atmosphere from awards, press or history.
+"upscale"), which is what the review loop exists for. Two passes of 20 insights each, judged against
+the source text:
+
+| | prompt v2 | prompt v3 |
+|---|---|---|
+| overall | 4 correct · 15 partial · 1 wrong | 6 correct · 12 partial · 2 wrong |
+| vibe_tags | 5 / 11 / 4 | 7 / 4 / 4 |
+| dominant fault | vibe inferred from awards, hotels, press | under-extraction: best time and events present in the text but missed; two neutral texts marked negative |
+| evidence fully verbatim | 60 % | 89 % |
+
+v3 forbade deriving atmosphere from awards or history, which fixed the v2 fault; the v3 findings are
+the input to the next prompt. Verdicts are stored per reviewer, so a second reviewer's disagreement
+is measurable, and each prompt version's extractions sit side by side in `insights`.
 
 **Resumability.** Every stage writes a `pipeline_runs` row and per-unit `stage_progress` markers, so a
 crash or a rate-limit stop resumes where it left off. One HTTP client handles throttling, jittered

@@ -39,7 +39,7 @@ FIELDS = (
 BLOCK_RE = re.compile(r"^### insight (\d+) .*?$", re.MULTILINE)
 
 
-def write_sample(n: int, out_dir: Path, unreviewed_only: bool) -> Path:
+def write_sample(n: int, out_dir: Path, unreviewed_only: bool, prompt_version: str | None = None) -> Path:
     with Run("review_sample") as run, connect() as conn:
         rows = conn.execute(
             """select i.id, i.venue_id, r.source, r.venue_name, r.text, i.vibe_tags, i.noise_level, i.crowd_level,
@@ -47,8 +47,9 @@ def write_sample(n: int, out_dir: Path, unreviewed_only: bool) -> Path:
                       i.confidence, i.model, i.prompt_version
                from insights i join raw_reviews r on r.id = i.raw_review_id
                where (%s = false or not exists (select 1 from extraction_reviews e where e.insight_id = i.id))
+                 and (%s::text is null or i.prompt_version = %s)
                order by random() limit %s""",
-            (unreviewed_only, n),
+            (unreviewed_only, prompt_version, prompt_version, n),
         ).fetchall()
         out_dir.mkdir(parents=True, exist_ok=True)
         path = out_dir / f"sample_run{run.id}.md"

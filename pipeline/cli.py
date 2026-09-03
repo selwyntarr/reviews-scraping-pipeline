@@ -77,13 +77,14 @@ def review_sample(
     n: int = typer.Option(30, help="Insights to sample"),
     out_dir: str = typer.Option("reviews", help="Where to write the markdown sample"),
     unreviewed_only: bool = typer.Option(True, help="Skip insights that already have a verdict"),
+    prompt_version: str | None = typer.Option(None, help="Only this prompt version, e.g. v3"),
 ):
     """Write a markdown sample of extractions for a reviewer (Claude or human)."""
     from pathlib import Path
 
     from .stages.review_sample import write_sample
 
-    typer.echo(write_sample(n, Path(out_dir), unreviewed_only))
+    typer.echo(write_sample(n, Path(out_dir), unreviewed_only, prompt_version))
 
 
 @app.command()
