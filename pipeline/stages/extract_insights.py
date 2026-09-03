@@ -18,7 +18,7 @@ from ..llm import extract_json, model_name
 
 log = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v5"
+PROMPT_VERSION = "v3"  # production; v5 is a promising experiment (see prompt_versions)
 
 VIBE_VOCAB = [
     "casual",
